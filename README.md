@@ -6,12 +6,17 @@
 Only the files created or modified for the use of Inventory and Equipment Modules are present.
 
 Notable files/directories that differ from main ULIMS repository:
+
 1. This README.md file
+
 2. protected/config/main.php modified at line 63 to include 'ext.gen' extension as generatorPath
     for gii. Contains Api Generator to generate controllers that has endpoints for REST API(Mobile-use).
+
 3. protected/extensions/gii API code generator for Gii. Has instructions on its index page in gii. 
     Generated code is commented w/ instructions
+
 4. protected/extensions/spout extension to be used for reading Initial Inventory Forms(xlsx files).
+
 5. protected/modules/inventory - Inventory Module. Tracks Chemical Containers and its consumption, 
     location, supplier, manufacturer, etc...
 
