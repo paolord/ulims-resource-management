@@ -39,5 +39,5 @@ table in the accesslist2 column in profiles table.
 | Name                   | Skype          | Github         |
 | ---------------------- | -------------- | -------------- |
 | Angelo Paolo S. Obispo | paolo.obispo   | paolord        |
-| other name             |                |                |
+| Bergel Cutara          | berujiru       | berujiru       |
 | other name             |                |                |
