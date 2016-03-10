@@ -33,3 +33,11 @@ Located in protected/modules/inventory are 3 sql files (inventory, up, down). ul
 DDL for the inventory db. up.sql include changes to ulimsportal db to gain access for inventory module.
 No new user types for inventory module. just add '6' or the id of the inventory module record in accesslist
 table in the accesslist2 column in profiles table.
+
+##### TEAM #####
+
+| Name                   | Skype          | Github         |
+| ---------------------- | -------------- | -------------- |
+| Angelo Paolo S. Obispo | paolo.obispo   | paolord        |
+| other name             |                |                |
+| other name             |                |                |
