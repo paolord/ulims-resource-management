@@ -60,11 +60,15 @@ return array(
 		// uncomment the following to enable the Gii tool
 		'gii'=>array(
 			'class'=>'system.gii.GiiModule',
-			'generatorPaths' => array('ext.gen'), // giix generators),
+			'generatorPaths' => array('ext.giix-core'), // giix generators),
 		 	//'generatorPaths' =>array('ext.mpgii'),//this line does the trick
 			'password'=>'Einhander',
 			// If removed, Gii defaults to localhost only. Edit carefully to taste.
 			'ipFilters'=>array('127.0.0.1','192.168.1.3','::1'),
+		),
+
+		'equipment'=> array(
+			'defaultController' => 'equipment/admin',
 		),
 
 		'cashier' => array(
