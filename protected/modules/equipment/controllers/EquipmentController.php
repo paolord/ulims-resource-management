@@ -75,8 +75,66 @@ class EquipmentController extends Controller
 				$this->redirect(array('view','id'=>$model->ID));
 		}
 
+		$dirname = Yii::getPathOfAlias('webroot').'/upload/';
+		$file = Yii::getPathOfAlias('webroot').'/upload/import.txt';
+		
+		// Create $dirname if not exist
+		if (!is_dir($dirname)){
+			mkdir($dirname, 0755, true);
+		}
+		
+		// Create $file if not exist
+		if(!file_exists($file)){  
+			fopen($file, 'w+');
+			file_put_contents($file, serialize(array()));
+		}
+
+		//loading import data
+		if($_FILES['import_path']['tmp_name'])
+		{
+			Yii::import('application.vendors.PHPExcel',true);
+            $objReader = new PHPExcel_Reader_Excel2007;
+            $objPHPExcel = $objReader->load($_FILES['import_path']['tmp_name']);
+            //$objPHPExcel = $objReader->load('F:\import.xls');
+            $objWorksheet = $objPHPExcel->getActiveSheet();
+            $highestRow = $objWorksheet->getHighestRow(); // e.g. 10
+            $highestColumn = $objWorksheet->getHighestColumn(); // e.g 'F'
+            $highestColumnIndex = PHPExcel_Cell::columnIndexFromString($highestColumn); // e.g. 5
+			//$equipment = array();
+            $importData = array();
+			for ($row = 6; $row <= $highestRow; ++$row) {
+				$equipment = array(
+					'equipmentID'=> $objWorksheet->getCellByColumnAndRow(1, $row)->getValue(),
+					'name'=>$objWorksheet->getCellByColumnAndRow(0, $row)->getValue(),
+					'description'=>$objWorksheet->getCellByColumnAndRow(2, $row)->getValue(),
+					'lab'=>$objWorksheet->getCellByColumnAndRow(4, $row)->getCalculatedValue(),
+					'classificationID'=>$objWorksheet->getCellByColumnAndRow(6, $row)->getCalculatedValue(),
+					'specification'=>$objWorksheet->getCellByColumnAndRow(7, $row)->getValue(),
+					'date_received'=>date('Y-m-d', PHPExcel_Shared_Date::ExcelToPHP($objWorksheet->getCellByColumnAndRow(8, $row)->getValue())),
+					'received_by'=>$objWorksheet->getCellByColumnAndRow(10, $row)->getValue(),
+					'amount'=>$objWorksheet->getCellByColumnAndRow(11, $row)->getValue(),
+					'supplier'=>$objWorksheet->getCellByColumnAndRow(13, $row)->getValue(),
+					'status'=>$objWorksheet->getCellByColumnAndRow(15, $row)->getCalculatedValue(),
+					'remarks'=>$objWorksheet->getCellByColumnAndRow(16, $row)->getValue(),
+				);
+				array_push($importData, $equipment);
+			}
+
+			file_put_contents($file, serialize($importData));
+
+			
+
+        }
+
+        $data = file_get_contents($file);
+		$arr = unserialize($data);
+		$importDataProvider = new CArrayDataProvider($arr);
+
 		$this->render('create',array(
 			'model'=>$model,
+			'importDataProvider'=>$importDataProvider,
+			'equipment'=>$equipment,
+			'has_duplicate'=>$this->checkExistingEquipments($arr)
 		));
 	}
 
@@ -138,10 +196,96 @@ class EquipmentController extends Controller
 		$model->unsetAttributes();  // clear any default values
 		if(isset($_GET['Equipment']))
 			$model->attributes=$_GET['Equipment'];
-
 		$this->render('admin',array(
 			'model'=>$model,
 		));
+	}
+
+	public function actionCreateDataEntryFile()
+	{
+		$equipmentDataProvider=new CActiveDataProvider(Equipment, array(
+				'pagination'=>false,
+		));
+		//get all the lab
+		$labs = Lab::model()->findAll();
+		if($labs){
+			$labCount=count($labs);
+			$labArray=array();
+			foreach($labs as $lab){
+				$labArray[]=array('labId'=>$lab->id, 'labName'=>$lab->labCode. " - ".$lab->labName);
+			}
+		}
+
+		$classifications = Equipmentclassification::model()->findAll();
+		if($classifications){
+			$classifyCount=count($classifications);
+			$classifyArray=array();
+			foreach($classifications as $classify){
+				$classifyArray[]=array('classifyId'=>$classify->ID, 'classifyName'=>$classify->name);
+			}
+		}
+
+		$statuses = Equipmentstatus::model()->findAll();
+		if($statuses){
+			$statusCount=count($statuses);
+			$statusArray=array();
+			foreach($statuses as $status){
+				$statusArray[]=array('statusId'=>$status->ID, 'statusName'=>$status->name);
+			}
+		}
+		//put a lab and classification active data record to arrayy //merging
+		$data = array_map(function ($arr1, $arr2) {
+		$new2 = array();
+		foreach ($arr2 as $key => $value) {
+		if (($value !== NULL) || !isset($arr1[$key])) {
+			$new2[$key] = $value;
+			}
+		}
+			if($arr1==NULL){
+				return $new2;
+			}else{
+				return array_merge($arr1, $new2);
+			}
+		}, $labArray, $classifyArray);
+
+
+		$data2 = array_map(function ($arr1, $arr2) {
+		$new2 = array();
+		foreach ($arr2 as $key => $value) {
+		if (($value !== NULL) || !isset($arr1[$key])) {
+			$new2[$key] = $value;
+			}
+		}
+			if($arr1==NULL){
+				return $new2;
+			}else{
+				return array_merge($arr1, $new2);
+			}
+		}, $data, $statusArray);	
+
+		$dataProvider=new CArrayDataProvider($data2);
+
+		$this->widget('ext.eexcelview.EExcelViewCreateEquipmentDataEntryFile', array(
+			'dataProvider'=>$dataProvider,
+			'columns'=>array(				
+				'labName',
+				'labId',
+				'classifyName',				
+				'classifyId',
+				'statusName',				
+				'statusId',
+			),
+			'title'=>'Equipment Data Entry Form for ULIMS',
+			'filename'=>'Equipment DataEntryForm',
+			'grid_mode'=>'export',
+			'exportType' => 'Excel2007',
+			'creator' =>'ULIMS equipment',
+			'subject'=>'Data entry form for ULIMS',
+			'labCount'=>$labCount,
+			'classifyCount'=>$classifyCount,
+			'statusCount'=>$statusCount,
+			)
+		);
 	}
 
 	/**
@@ -170,5 +314,68 @@ class EquipmentController extends Controller
 			echo CActiveForm::validate($model);
 			Yii::app()->end();
 		}
+	}
+
+	public function checkExistingEquipments($equipments)
+	{
+		$has_duplicate = false;
+		foreach($equipments as $equipment){
+			$data = equipment::model()->findByAttributes(array('equipmentID'=>$equipment['equipmentID']));
+			$has_duplicate = $data ? true : false;
+			if($has_duplicate){
+				return true;
+			}		
+		}
+		return false;
+	}
+
+	public function actionImport()
+	{
+		$file = Yii::getPathOfAlias('webroot').'/upload/import.txt';
+		$data = file_get_contents($file);
+		$arr = unserialize($data);
+		
+		file_put_contents($file, serialize(array()));
+		$count = 0;
+		foreach($arr as $equipment){
+			
+			$new_equipment = new Equipment();
+			$new_equipment->equipmentID =$equipment['equipmentID'];
+			$new_equipment->name=$equipment['name'];
+			$new_equipment->description=$equipment['description'];
+			$new_equipment->lab=$equipment['lab'];
+			$new_equipment->classificationID=$equipment['classificationID'];
+			$new_equipment->specification=$equipment['specification'];
+			$new_equipment->date_received=$equipment['date_received'];
+			$new_equipment->received_by=$equipment['received_by'];
+			$new_equipment->amount=$equipment['amount'];
+			$new_equipment->supplier=$equipment['supplier'];
+			$new_equipment->status=$equipment['status'];
+			$new_equipment->remarks=$equipment['remarks'];
+			if($new_equipment->save()){
+				$count ++;
+			}
+
+		}
+		if($count != 0){
+			$html = $count;
+			echo CJSON::encode(array(
+	                  	'status'=>'success', 
+	                    'div'=>$html.' Equipments Successfully Imported.'
+	                    ));
+			exit;
+		}else{
+			echo CJSON::encode(array(
+                  	'status'=>'failure', 
+                    'div'=>'<div style="text-align:center;" class="alert alert-error"><i class="icon icon-warning-sign"></i><font style="font-size:14px;"> System Warning. </font><br \><br \><div>'.$count.' Requests imported.</div></div>'
+                    ));
+			exit;
+		}
+
+	}
+	public function actionClearFile(){
+		$file = Yii::getPathOfAlias('webroot').'/upload/import.txt';
+		file_put_contents($file, serialize(array()));
+		$this->redirect('create');
 	}
 }

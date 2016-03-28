@@ -18,7 +18,12 @@ $this->menu=array(
 
 <h1>View Equipment #<?php echo $model->ID; ?></h1>
 
-<?php $this->widget('zii.widgets.CDetailView', array(
+<?php
+ $this->beginWidget('zii.widgets.CPortlet', array(
+    'title'=>"<i class='icon-wrench'></i><strong>Equipment # $model->ID</strong>",
+		),array('class'=>'portletbold announcewindow'));
+
+$this->widget('zii.widgets.CDetailView', array(
 	'data'=>$model,
 	'attributes'=>array(
 		'ID',
@@ -36,4 +41,23 @@ $this->menu=array(
 		'remarks',
 		'usagestatus',
 	),
-)); ?>
+));
+
+
+$this->endWidget();
+
+
+
+ $this->beginWidget('zii.widgets.CPortlet', array(
+    'title'=>"<i class='icon-wrench'></i><strong>Equipment Maintenance</strong>",
+		),array('class'=>'portletbold '));
+ echo "sample Maintenance data ";
+$this->endWidget();
+
+
+ $this->beginWidget('zii.widgets.CPortlet', array(
+    'title'=>"<i class='icon-wrench'></i><strong>Equipment Calibration</strong>",
+		),array('class'=>'portletbold '));
+ echo "sample Calibration data ";
+$this->endWidget();
+?> 
