@@ -38,7 +38,7 @@ class Equipment extends CActiveRecord
 		// NOTE: you should only define rules for those attributes that
 		// will receive user inputs.
 		return array(
-			array('equipmentID, name, description, lab, classificationID, specification, date_received, received_by, amount, supplier, status, usagestatus, lengthofuse, remarks', 'required'),
+			array('equipmentID, name, description, lab, classificationID, specification, date_received, received_by, amount, supplier, status, remarks', 'required'),
 			array('lab, classificationID, received_by, supplier, status, usagestatus', 'numerical', 'integerOnly'=>true),
 			array('amount', 'numerical'),
 			array('equipmentID', 'length', 'max'=>50),
